@@ -1,0 +1,21 @@
+{
+  "name": "typescript-agent",
+  "version": "1.0.0",
+  "main": "main.ts",
+  "scripts": {
+    "agent": "tsx --env-file=.env main.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@phukon/duckduckgo-search": "^1.1.0",
+    "openai": "^4.91.1",
+    "yaml": "^2.7.1"
+  }
+}
