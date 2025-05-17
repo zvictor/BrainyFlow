@@ -1,3 +1,7 @@
+---
+machine-display: false
+---
+
 # Installation
 
 BrainyFlow is currently available for both Python and TypeScript.

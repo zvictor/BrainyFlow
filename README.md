@@ -170,6 +170,12 @@ Check out [Agentic Coding Guidance](https://brainy.gitbook.io/flow/guides/agenti
 
 We would like to extend our deepest gratitude to the creators and contributors of the PocketFlow framework, from which brainyFlow originated as a fork.
 
+## Contributors Wanted!
+
+We're looking for contributors for all aspects of the project. Whether you're interested in documentation, testing, or implementing features, we'd love your help!
+
+Get involved by joining our Discord server!
+
 ## Liability Disclaimer
 
 BrainyFlow is provided "as is" without any warranties or guarantees.  
