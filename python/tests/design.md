@@ -24,7 +24,7 @@ This document outlines the testing strategy for the Python port of the `brainyfl
 ### 3.1. `Memory` Class
 
 - **Initialization:**
-  - `Memory.create()` correctly initializes global and optional local stores
+  - `Memory()` correctly initializes global and optional local stores
   - Global and local stores are properly accessible
 - **Proxy Behavior (Reading):**
   - Reads property from local store if present

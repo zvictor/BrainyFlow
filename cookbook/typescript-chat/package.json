@@ -9,11 +9,11 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@types/node": "^22.13.17",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "openai": "^4.91.1"
+    "openai": "^4.103.0"
   }
 }

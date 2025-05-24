@@ -4,10 +4,10 @@
     "@ianvs/prettier-plugin-sort-imports": "4.4.1",
     "@total-typescript/ts-reset": "0.6.1",
     "@tsconfig/node-lts": "22.0.1",
-    "@types/node": "22.13.14",
+    "@types/node": "22.15.21",
     "prettier": "3.5.3",
-    "tsx": "4.19.3",
-    "typescript": "^5.8.2"
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
   },
-  "packageManager": "pnpm@10.8.1"
+  "packageManager": "pnpm@10.11.0"
 }

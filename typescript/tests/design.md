@@ -20,8 +20,6 @@ This document outlines the testing strategy for the `brainyflow.ts` library usin
 
 ### 3.1. `Memory` Class
 
-- **Initialization:**
-  - `Memory.create()` correctly initializes global and optional local stores.
 - **Proxy Behavior (Reading):**
   - Reads property from local store if present.
   - Falls back to global store if property not in local store.

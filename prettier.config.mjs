@@ -1,16 +1,15 @@
 /**
- * @see https://prettier.io/docs/en/configuration.html
+ * @see https://prettier.io/docs/configuration
  * @type {import("prettier").Config}
  */
-
-module.exports = {
+const config = {
   editorconfig: true,
   semi: false,
   useTabs: false,
   singleQuote: true,
   arrowParens: 'always',
   tabWidth: 2,
-  printWidth: 100,
+  printWidth: 130,
   trailingComma: 'all',
   plugins: ['@ianvs/prettier-plugin-sort-imports'],
   importOrderTypeScriptVersion: '5.4.5',
@@ -40,3 +39,5 @@ module.exports = {
     '^./types$',
   ],
 }
+
+export default config

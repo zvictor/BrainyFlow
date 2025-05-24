@@ -298,7 +298,7 @@ async def mock_llm_logic(prompt: str) -> str:
 async def test_node_with_mocked_llm():
     # Assume MyLlmNode calls utils.call_llm internally
     # node = MyLlmNode()
-    # memory = Memory.create({"input": "some text to summarize"})
+    # memory = Memory({"input": "some text to summarize"})
 
     # Use patch to replace the actual call_llm
     with patch('utils.call_llm', new=AsyncMock(side_effect=mock_llm_logic)) as mock_call:
@@ -394,7 +394,7 @@ async def test_retry_logic():
     global call_count_retry
     call_count_retry = 0 # Reset counter for test
     # node = NodeWithRetry()
-    # memory = Memory.create({})
+    # memory = Memory({})
 
     # Patch the external call made within node.exec
     # Also patch asyncio.sleep to avoid actual waiting

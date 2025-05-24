@@ -145,7 +145,7 @@ class ErrorNode(Node):
 def memory():
     """Create a test memory instance."""
     global_store = {"initial": "global"}
-    return Memory.create(global_store)
+    return Memory(global_store)
 
 @pytest.fixture
 def test_nodes():

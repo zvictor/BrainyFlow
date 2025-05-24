@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, it, mock } from 'node:test'
-import { BaseNode, DEFAULT_ACTION, Memory, Node, NodeError } from '../brainyflow'
+import { BaseNode, createMemory, DEFAULT_ACTION, Memory, Node, NodeError } from '../brainyflow'
 
 // Helper sleep function
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -71,7 +71,7 @@ describe('BaseNode & Node', () => {
 
   beforeEach(() => {
     globalStore = { initial: 'global' }
-    memory = Memory.create(globalStore)
+    memory = createMemory(globalStore)
     // Reset mocks for SimpleNode if necessary (though node:test often isolates)
     mock.reset() // Reset all mocks globally for safety
   })
@@ -191,7 +191,7 @@ describe('BaseNode & Node', () => {
       assert.equal(triggers.length, 1)
       const [action, triggeredMemory] = triggers[0]
       assert.equal(action, 'my_action')
-      assert.ok(triggeredMemory instanceof Memory)
+      assert.ok(triggeredMemory._isMemoryObject)
       assert.equal(triggeredMemory.key, 'value') // Check forkingData applied locally
       assert.equal(triggeredMemory.local.key, 'value')
       assert.strictEqual(memory.key, undefined) // Original memory unaffected
@@ -211,7 +211,7 @@ describe('BaseNode & Node', () => {
       assert.equal(triggers.length, 1)
       const [action, triggeredMemory] = triggers[0]
       assert.equal(action, DEFAULT_ACTION)
-      assert.ok(triggeredMemory instanceof Memory)
+      assert.ok(triggeredMemory._isMemoryObject)
       assert.notStrictEqual(triggeredMemory, memory) // Should be a clone
       assert.deepStrictEqual(triggeredMemory.local, {}) // No forking data
     })
@@ -259,7 +259,7 @@ describe('BaseNode & Node', () => {
       const triggers = await node.run(memory, true)
       assert.equal(triggers.length, 1)
       assert.equal(triggers[0][0], 'test_action')
-      assert.ok(triggers[0][1] instanceof Memory)
+      assert.ok(triggers[0][1]._isMemoryObject)
     })
 
     it('run() should warn if called on a node with successors', async () => {
@@ -268,11 +268,7 @@ describe('BaseNode & Node', () => {
       nodeA.next(nodeB)
       const warnMock = mock.method(console, 'warn', () => {})
       await nodeA.run(memory)
-      assert.equal(
-        warnMock.mock.calls.length,
-        1,
-        'Expected a warning when running a node that has successors',
-      )
+      assert.equal(warnMock.mock.calls.length, 1, 'Expected a warning when running a node that has successors')
       warnMock.mock.restore()
       // assert.match(warnMock.mock.calls[0].arguments[0], /Node won't run successors. Use Flow!/);
       // warnMock.mock.restore();
@@ -287,7 +283,7 @@ describe('BaseNode & Node', () => {
 
       assert.equal(node.prep.mock.calls.length, 1)
       const memoryArg = node.prep.mock.calls[0].arguments[0] as Memory<any, any>
-      assert.ok(memoryArg instanceof Memory)
+      assert.ok(memoryArg._isMemoryObject)
       assert.equal(memoryArg.initial, 'global_val') // Check property from the passed global
       assert.equal(memoryArg.count, 5)
       assert.deepStrictEqual(memoryArg.local, {})
@@ -395,7 +391,11 @@ describe('BaseNode & Node', () => {
     })
 
     it('should wait between retries if wait > 0', async () => {
-      const node = new ErrorNode({ maxRetries: 3, wait: 0.05, succeedAfter: 1 }) // Succeed on 2nd attempt
+      const node = new ErrorNode({
+        maxRetries: 3,
+        wait: 0.05,
+        succeedAfter: 1,
+      }) // Succeed on 2nd attempt
       const startTime = Date.now()
       const result = await node.run(memory)
       const endTime = Date.now()

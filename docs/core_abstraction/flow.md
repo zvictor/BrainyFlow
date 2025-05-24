@@ -302,7 +302,7 @@ flowchart LR
 
 ### Cycle Detection
 
-Loops are created by connecting a node back to a previously executed node. To prevent infinite loops, `Flow` includes cycle detection controlled by the `maxVisits` option in its constructor (default is 5). If a node is visited more times than `maxVisits` during a single run, an error is thrown.
+Loops are created by connecting a node back to a previously executed node. To prevent infinite loops, `Flow` includes cycle detection controlled by the `maxVisits` option in its constructor (default is 15). If a node is visited more times than `maxVisits` during a single run, an error is thrown.
 
 {% hint style="success" %}
 This ensures that the flow does not get stuck in an infinite loop.
@@ -313,7 +313,7 @@ This ensures that the flow does not get stuck in an infinite loop.
 const flow = new Flow(startNode, { maxVisits: 10 })
 ```
 
-- The default value for `maxVisits` is `5`.
+- The default value for `maxVisits` is `15`.
 - Set `maxVisits` to `Infinity` or a very large number for effectively no limit (use with caution!).
 
 ## Flow Parallelism

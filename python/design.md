@@ -24,7 +24,6 @@ Manages the state accessible to nodes during execution.
 - **Membership Testing:** Supports the `in` operator via `__contains__` to check for key existence in either local or global scope.
 - **Local Property:** The `local` property provides direct read access to the `_local` dictionary.
 - **Cloning:** The `clone(forking_data=None)` method creates a new `Memory` instance. The global store is shared by reference, while the local store is deep-copied. Optional `forking_data` can be provided to initialize or update the new local store. This is crucial for branching and parallel execution to ensure state isolation where needed.
-- **Factory Method:** `Memory.create(global_store, local_store=None)` provides a static method for instantiation.
 
 ### 2. BaseNode (`brainyflow.BaseNode`)
 

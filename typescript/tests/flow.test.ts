@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { beforeEach, describe, it, mock } from 'node:test'
-import { DEFAULT_ACTION, Flow, Memory, Node } from '../brainyflow'
+import { createMemory, DEFAULT_ACTION, Flow, Memory, Node } from '../brainyflow'
 
 // --- Helper Nodes ---
 class TestNode extends Node<any, any> {
@@ -54,7 +54,7 @@ describe('Flow Class', () => {
 
   beforeEach(() => {
     globalStore = { initial: 'global' }
-    memory = Memory.create(globalStore)
+    memory = createMemory(globalStore)
     nodeA = new TestNode('A')
     nodeB = new TestNode('B')
     nodeC = new TestNode('C')
@@ -67,7 +67,7 @@ describe('Flow Class', () => {
     it('should store the start node and default options', () => {
       const flow = new Flow(nodeA)
       assert.strictEqual(flow.start, nodeA)
-      assert.deepStrictEqual((flow as any).options, { maxVisits: 5 })
+      assert.deepStrictEqual((flow as any).options, { maxVisits: 15 })
     })
 
     it('should accept custom options', () => {
@@ -126,7 +126,7 @@ describe('Flow Class', () => {
       // Test path B
       branchingNode.setTrigger('path_B')
       let flowB = new Flow(branchingNode)
-      let memoryB = Memory.create({})
+      let memoryB = createMemory({})
       await flowB.run(memoryB)
       assert.equal(memoryB.post_Branch, true)
       assert.equal(memoryB.post_B, true)
@@ -135,7 +135,7 @@ describe('Flow Class', () => {
       // Test path C
       branchingNode.setTrigger('path_C') // Reset trigger
       let flowC = new Flow(branchingNode) // Recreate flow to reset visits
-      let memoryC = Memory.create({})
+      let memoryC = createMemory({})
       await flowC.run(memoryC)
       assert.equal(memoryC.post_Branch, true)
       assert.strictEqual(memoryC.post_B, undefined)
@@ -176,9 +176,12 @@ describe('Flow Class', () => {
       })
 
       // Trigger B with specific local data
-      branchingNode.setTrigger('path_B', { local_data: 'for_B', common_local: 'common' })
+      branchingNode.setTrigger('path_B', {
+        local_data: 'for_B',
+        common_local: 'common',
+      })
       let flowB = new Flow(branchingNode)
-      let memoryB = Memory.create({ global_val: 1 })
+      let memoryB = createMemory({ global_val: 1 })
       await flowB.run(memoryB)
       assert.equal(nodeB.prepMock.mock.calls.length, 1)
       assert.equal(nodeC.prepMock.mock.calls.length, 0)
@@ -186,9 +189,12 @@ describe('Flow Class', () => {
       assert.strictEqual(memoryB.common_local, undefined)
 
       // Trigger C with different local data
-      branchingNode.setTrigger('path_C', { local_data: 'for_C', common_local: 'common' })
+      branchingNode.setTrigger('path_C', {
+        local_data: 'for_C',
+        common_local: 'common',
+      })
       let flowC = new Flow(branchingNode) // Recreate flow
-      let memoryC = Memory.create({ global_val: 1 })
+      let memoryC = createMemory({ global_val: 1 })
       await flowC.run(memoryC)
       assert.equal(nodeB.prepMock.mock.calls.length, 1) // Called once from previous run
       assert.equal(nodeC.prepMock.mock.calls.length, 1) // Called once now
@@ -210,7 +216,7 @@ describe('Flow Class', () => {
       const flow = new Flow(nodeA, { maxVisits: maxVisitsAllowed })
 
       // Use a fresh memory object for this specific test's state
-      const loopMemory = Memory.create<{ count?: number }>({})
+      const loopMemory = createMemory<{ count?: number }>({})
       // Expect rejection when the (maxVisits + 1)th execution is attempted
       await assert.rejects(
         async () => {
@@ -218,42 +224,30 @@ describe('Flow Class', () => {
             await flow.run(loopMemory) // Run with the dedicated memory
           } catch (e) {
             // Assert state *inside* the catch block before re-throwing
-            assert.equal(
-              loopCount,
-              maxVisitsAllowed,
-              `Node should have executed exactly ${maxVisitsAllowed} times before error`,
-            )
-            assert.equal(
-              loopMemory.count,
-              maxVisitsAllowed,
-              `Memory count should be ${maxVisitsAllowed} before error`,
-            )
+            assert.equal(loopCount, maxVisitsAllowed, `Node should have executed exactly ${maxVisitsAllowed} times before error`)
+            assert.equal(loopMemory.count, maxVisitsAllowed, `Memory count should be ${maxVisitsAllowed} before error`)
             throw e // Re-throw for assert.rejects to catch
           }
           // If it doesn't throw (which it should), fail the test explicitly
           assert.fail('Flow should have rejected due to cycle limit, but did not.')
         },
-        new RegExp(`Maximum cycle count reached \\(${maxVisitsAllowed}\\)`),
+        new RegExp(`Maximum cycle count \\(${maxVisitsAllowed}\\) reached`),
         'Flow should reject when loop count exceeds maxVisits',
       )
 
       // Final check on loopCount after rejection is confirmed
-      assert.equal(
-        loopCount,
-        maxVisitsAllowed,
-        `Node should have executed exactly ${maxVisitsAllowed} times (final check)`,
-      )
+      assert.equal(loopCount, maxVisitsAllowed, `Node should have executed exactly ${maxVisitsAllowed} times (final check)`)
     })
 
     it('should throw error immediately if loop exceeds maxVisits (e.g., maxVisits=2)', async () => {
       nodeA.next(nodeA) // A -> A loop
       const maxVisitsAllowed = 2
       const flow = new Flow(nodeA, { maxVisits: maxVisitsAllowed })
-      const loopMemory = Memory.create<{ count?: number }>({}) // Fresh memory
+      const loopMemory = createMemory<{ count?: number }>({}) // Fresh memory
 
       await assert.rejects(
         flow.run(loopMemory),
-        new RegExp(`Maximum cycle count reached \\(${maxVisitsAllowed}\\)`), // Check error message
+        new RegExp(`Maximum cycle count \\(${maxVisitsAllowed}\\) reached`), // Check error message
         'Flow should reject when loop count exceeds maxVisits (maxVisits=2)',
       )
     })
@@ -337,7 +331,7 @@ describe('Flow Class', () => {
       // Trigger path B
       branchingNode.setTrigger('path_B')
       let flowB = new Flow(branchingNode)
-      let resultB = await flowB.run(Memory.create({}))
+      let resultB = await flowB.run(createMemory({}))
 
       const expectedB = {
         path_B: [
@@ -357,7 +351,7 @@ describe('Flow Class', () => {
       // Trigger path C
       branchingNode.setTrigger('path_C')
       let flowC = new Flow(branchingNode) // Reset flow/visits
-      let resultC = await flowC.run(Memory.create({}))
+      let resultC = await flowC.run(createMemory({}))
 
       const expectedC = {
         path_C: [

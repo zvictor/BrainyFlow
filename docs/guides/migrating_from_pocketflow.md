@@ -53,6 +53,7 @@ from brainyflow import Node, Flow, SequentialBatchNode # ... etc
 ### Step 2: Add `async` / `await`:
 
 - Add `async` before `def` for your `prep`, `exec`, `post`, and `exec_fallback` methods in Nodes and Flows.
+- Remove any `_async` suffix from the method names.
 - Add `await` before any calls to these methods, `run()` methods, `asyncio.sleep()`, or other async library functions.
 
 #### Node Example (Before):
@@ -106,32 +107,49 @@ class MyNode(Node):
 
 _(Flow methods follow the same pattern)_
 
-### Step 3: Update Batch Processing Implementation (`*BatchNode` / `*BatchFlow` Removal)
+### Step 3: Use `.trigger()` for next actions
+
+Check all `.post()` methods and replace any `return action` with a call to `self.trigger(action)`. _`return "default"` can be either replaced or removed._
+
+### Step 4: Replace memory access methods:
+
+Replace `shared.get(` by `getattr(shared, ` if `shared` is a `Memory` instance.
+
+### Step 5: Update Batch Processing Implementation (`*BatchNode` / `*BatchFlow` Removal)
 
 PocketFlow had dedicated classes like `BatchNode`, `ParallelBatchNode`, `BatchFlow`, and `ParallelBatchFlow`. BrainyFlow v0.3+ **removes these specialized classes**.
 
-The functionality is now achieved using standard `Node`s and `Flow`s combined with a specific pattern:
+The batch functionality is now achieved using standard `Node`s and `Flow`s combined with a specific pattern:
 
-1.  **Rename Classes**:
+1.  **Adopt the Fan-Out Trigger Pattern**:
 
-    - Replace `BatchNode`, `AsyncBatchNode`, `ParallelBatchNode`, `AsyncParallelBatchNode` with the standard `brainyflow.Node`.
-    - Replace `BatchFlow`, `AsyncBatchFlow` with `brainyflow.Flow`.
-    - Replace `AsyncParallelBatchFlow` with `brainyflow.ParallelFlow`.
-    - Remember to make `prep`, `exec`, `post` methods `async` as per Step 2.
+  All `BatchNode` need to be split into two, a **Trigger Node** and a **Processor Node**.
 
-2.  **Adopt the Fan-Out Trigger Pattern**:
+  The **Trigger Node**:
+      - Use the `prep` method to fetch the list of items to process, as usual.
+      - Use the `post` method to iterate through these items. For **each item**, calls `self.trigger(action, forkingData={"item": current_item, "index": i, ...})`. The `forkingData` dictionary passes item-specific data into the **local memory** of the triggered successor. (the `action` name can be any of your choice as long as you connect the nodes in the flow; e.g. `process_one`, `default`)
 
-    - The node that previously acted as the `BatchNode` (or the starting node of a `BatchFlow`) needs to be refactored into a **Trigger Node**.
-      - Its `prep` method usually fetches the list of items to process.
-      - Its `post` method iterates through these items. For **each item**, it calls `self.trigger("process_one", forkingData={"item": current_item, "index": i, ...})`. The `forkingData` dictionary passes item-specific data into the **local memory** of the triggered successor.
-    - The logic previously in the `exec_one` method of the `BatchNode` must be moved into the `exec` method of a new **Processor Node**.
-      - This `ProcessorNode` is connected to the `TriggerNode` via the `"process_one"` action (e.g., `trigger_node.on("process_one", processor_node)`).
-      - The `ProcessorNode`'s `prep` method reads the specific item data (e.g., `memory.item`, `memory.index`) from its **local memory**, which was populated by the `forkingData`.
+  The **Processor Node**:
+      - The `ProcessorNode`'s `prep` method reads the specific item data (e.g., `memory.item`, `memory.index`) from its **local memory**, which was populated by the `forkingData` in the trigger node.
+      - The logic previously in the `exec_one` method of the `BatchNode` must be renamed to `exec`.
       - Its `post` method typically writes the result back to the **global memory**, often using the index to place it correctly in a shared list or dictionary.
 
-3.  **Choose the Right Flow**:
+  Similarly, `BatchFlow` need to be split into a `Node` and a regular `Flow`:
+      - Replace the return value of the `prep` method with a  `post` method containing trigger calls.
+      - Instead of `self.params["property"]`, use the usual `memory.property`.
+
+2.  **Choose the Right Flow**:
     - Wrap the `TriggerNode` and `ProcessorNode` in a standard `brainyflow.Flow` if you need items processed **sequentially**.
     - Wrap them in a `brainyflow.ParallelFlow` if items can be processed **concurrently**.
+    - Connect the nodes: `trigger_node >> processor_node` or `trigger_node - action >> processor_node`
+
+3.  **Rename All Classes**:
+
+    - Replace `AsyncParallelBatchFlow` with `brainyflow.ParallelFlow`.
+    - Replace `AsyncParallelBatchNode`, `ParallelBatchNode`, `AsyncBatchNode`, `BatchNode` with the standard `brainyflow.Node`.
+    - Replace `AsyncBatchFlow`, `BatchFlow` with `brainyflow.Flow`.
+    - Remember to make `prep`, `exec`, `post` methods `async` as per Step 2.
+
 
 #### Example: Translating Text into Multiple Languages
 
@@ -330,7 +348,7 @@ triggerNode.next(processorNode)
 
 _(See the [MapReduce design pattern](../design_pattern/mapreduce.md) for more detailed examples of fan-out/aggregate patterns)._
 
-### Step 4: Run with `asyncio`:
+### Step 6: Run with `asyncio`:
 
 BrainyFlow code must be run within an async event loop. The standard way is using `asyncio.run()`:
 
@@ -353,9 +371,11 @@ if __name__ == "__main__":
 Migrating from PocketFlow to BrainyFlow primarily involves:
 
 1.  Updating imports to `brainyflow` and adding `import asyncio`.
-2.  Adding `async` to your Node/Flow method definitions (`prep`, `exec`, `post`, `exec_fallback`).
+2.  Adding `async` to your Node/Flow method definitions (`prep`, `exec`, `post`, `exec_fallback`) and removing any `_async` suffix from the method names.
+3. Replacing any `return action` in `post()` with a call to `self.trigger(action)`.
 3.  Using `await` when calling `run()` methods and any other asynchronous operations within your methods.
 4.  Replacing `BatchNode`/`BatchFlow` with the appropriate `Sequential*` or `Parallel*` BrainyFlow classes.
 5.  Running your main execution logic within an `async def main()` function called by `asyncio.run()`.
+6. Replacing all `return action` by `self.trigger(action)` in your Node methods.
 
 This transition enables you to leverage the performance and concurrency benefits of asynchronous programming in your workflows.

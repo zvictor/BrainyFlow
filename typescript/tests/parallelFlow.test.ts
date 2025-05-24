@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { beforeEach, describe, it, mock } from 'node:test'
-import { DEFAULT_ACTION, Memory, Node, ParallelFlow } from '../brainyflow'
+import { createMemory, DEFAULT_ACTION, Memory, Node, ParallelFlow } from '../brainyflow'
 
 // Helper sleep function
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -68,7 +68,7 @@ describe('ParallelFlow Class', () => {
 
   beforeEach(() => {
     globalStore = { initial: 'global' }
-    memory = Memory.create(globalStore)
+    memory = createMemory(globalStore)
     triggerNode = new MultiTriggerNode()
     nodeB = new DelayedNode('B')
     nodeC = new DelayedNode('C')
@@ -98,13 +98,8 @@ describe('ParallelFlow Class', () => {
     // 1. Check total duration: Should be closer to max(delayB, delayC) than sum(delayB, delayC)
     const maxDelay = Math.max(delayB, delayC)
     const sumDelay = delayB + delayC
-    console.log(
-      `Execution Time: ${duration}ms (Max Delay: ${maxDelay}ms, Sum Delay: ${sumDelay}ms)`,
-    )
-    assert.ok(
-      duration < sumDelay - 10,
-      `Duration (${duration}ms) should be significantly less than sum (${sumDelay}ms)`,
-    )
+    console.log(`Execution Time: ${duration}ms (Max Delay: ${maxDelay}ms, Sum Delay: ${sumDelay}ms)`)
+    assert.ok(duration < sumDelay - 10, `Duration (${duration}ms) should be significantly less than sum (${sumDelay}ms)`)
     assert.ok(
       duration >= maxDelay - 5 && duration < maxDelay + 50, // Allow buffer for overhead
       `Duration (${duration}ms) should be close to max delay (${maxDelay}ms)`,
@@ -120,25 +115,15 @@ describe('ParallelFlow Class', () => {
     assert.ok('process_c' in result, "Result should contain 'process_c' key")
     const processB_Results = result.process_b
     const processC_Results = result.process_c
-    assert.ok(
-      Array.isArray(processB_Results) && processB_Results.length === 1,
-      "'process_b' should be an array with 1 result",
-    )
-    assert.ok(
-      Array.isArray(processC_Results) && processC_Results.length === 1,
-      "'process_c' should be an array with 1 result",
-    )
+    assert.ok(Array.isArray(processB_Results) && processB_Results.length === 1, "'process_b' should be an array with 1 result")
+    assert.ok(Array.isArray(processC_Results) && processC_Results.length === 1, "'process_c' should be an array with 1 result")
 
     // Check that both branches completed (results are empty objects as DelayedNode has no successors)
     assert.deepStrictEqual(processB_Results[0], { [DEFAULT_ACTION]: [] })
     assert.deepStrictEqual(processC_Results[0], { [DEFAULT_ACTION]: [] })
 
     // 4. Check total mock calls
-    assert.equal(
-      nodeB.execMock.mock.calls.length + nodeC.execMock.mock.calls.length,
-      2,
-      'Total exec calls across parallel nodes should be 2',
-    )
+    assert.equal(nodeB.execMock.mock.calls.length + nodeC.execMock.mock.calls.length, 2, 'Total exec calls across parallel nodes should be 2')
   })
 
   it('should handle mix of parallel and sequential execution', async () => {
@@ -181,10 +166,7 @@ describe('ParallelFlow Class', () => {
 
     // Check timing: D should start only after its respective predecessor (B or C) finishes.
     // The whole flow should take roughly max(delayB, delayC) + delayD
-    assert.ok(
-      duration >= expectedMinDuration - 10,
-      `Duration (${duration}ms) should be >= expected min (${expectedMinDuration}ms)`,
-    )
+    assert.ok(duration >= expectedMinDuration - 10, `Duration (${duration}ms) should be >= expected min (${expectedMinDuration}ms)`)
     assert.ok(
       duration < expectedMinDuration + 100, // Allow generous buffer for overhead
       `Duration (${duration}ms) should be reasonably close to expected min (${expectedMinDuration}ms)`,
